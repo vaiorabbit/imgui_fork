@@ -1,12 +1,17 @@
-# CMakeLists.txt for macOS
+# CMakeLists.txt for macOS & Windows
 # Usage:
-# - Put 'SDL2.framework' at imgui/examples/libs/SDL2 (Use imgui/examples/libs/SDL2/GetSDL2Framework.sh)
+# - (macOS) Put 'SDL2.framework' at imgui/examples/libs/SDL2 (Use imgui/examples/libs/SDL2/GetSDL2Framework.sh)
+# - (macOS) Setup SDL2 include/lib files at imgui/examples/libs/SDL2 (Use imgui/examples/libs/SDL2/GetSDL2Package.cmd)
 # - Put this file at imgui/examples/example_sdl_opengl3
 # - $ cd imgui/examples/example_sdl_opengl3
 # - $ mkdir build
 # - $ cd build
-# - $ cmake .. -G "Xcode"
-# - $ open example_sdl_opengl3.xcodeproj
+# - (macOS)
+#   - $ cmake .. -G "Xcode"
+#   - $ open example_sdl_opengl3.xcodeproj
+# - (Windows)
+#   - $ cmake .. -G "Visual Studio 2019"
+#   - Open example_sdl_opengl3.sln
 
 cmake_minimum_required( VERSION 3.17.1 )
 project( example_sdl_opengl3 )
@@ -14,7 +19,9 @@ project( example_sdl_opengl3 )
 find_package(OpenGL)
 
 # SDL2.framework (macOS)
-if (CMAKE_HOST_APPLE)
+if (CMAKE_HOST_WIN32)
+    include_directories( ${CMAKE_CURRENT_LIST_DIR}/../libs/SDL2/include )
+elseif(CMAKE_HOST_APPLE)
     list(APPEND CMAKE_FRAMEWORK_PATH "${CMAKE_CURRENT_LIST_DIR}/../libs/SDL2")
 	find_path(SDL2_INCLUDE NAMES "SDL.h")
     find_library(SDL2_LIBRARY NAMES SDL2)
@@ -59,7 +66,11 @@ include_directories(
     ${IMGUI_IMPL_PATH}
 )
 
-link_directories( example_sdl_opengl3 ${SDL2_LIBRARY} )
+if ( CMAKE_HOST_WIN32 )
+    link_directories( ${CMAKE_CURRENT_LIST_DIR}/../libs/SDL2/lib )
+elseif ( CMAKE_HOST_APPLE )
+    link_directories( example_sdl_opengl3 ${SDL2_LIBRARY} )
+endif()
 
 add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GL3W)
 
@@ -71,11 +82,25 @@ add_executable( example_sdl_opengl3
 				${GL3W_SOURCES}
 )
 
-target_link_libraries( example_sdl_opengl3 ${OPENGL_LIBRARIES} "-framework CoreFoundation" )
-target_link_libraries( example_sdl_opengl3 general ${SDL2_LIBRARY} )
+if ( CMAKE_HOST_WIN32 )
+    target_link_libraries( example_sdl_opengl3 ${OPENGL_LIBRARIES} SDL2 SDL2main )
+elseif ( CMAKE_HOST_APPLE )
+    target_link_libraries( example_sdl_opengl3 ${OPENGL_LIBRARIES} "-framework CoreFoundation" )
+    target_link_libraries( example_sdl_opengl3 general ${SDL2_LIBRARY} )
+endif()
 
 set_target_properties( example_sdl_opengl3 PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS NO
 )
+
+if ( CMAKE_HOST_WIN32 )
+    # "The file contains a character that cannot be represented in the current code page (...)"
+    target_compile_options(example_sdl_opengl3 PRIVATE "/wd4819")
+
+    add_custom_command(TARGET example_sdl_opengl3 POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_LIST_DIR}/../libs/SDL2/lib/SDL2.dll"
+            $<TARGET_FILE_DIR:example_sdl_opengl3>)
+endif()
