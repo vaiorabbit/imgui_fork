@@ -24,7 +24,8 @@ set( EXAMPLE_SDL_OPENGL3_HEADERS
 )
 
 set( EXAMPLE_SDL_OPENGL3_SOURCES
-    main.cpp
+    # main.cpp
+	japanese_glyph_test.cpp
 )
 
 set(IMGUI_PATH "${CMAKE_CURRENT_LIST_DIR}/../..")
