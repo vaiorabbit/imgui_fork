@@ -9,6 +9,10 @@
 #include <stdio.h>
 #include <SDL.h>
 
+#include <vector>
+#include <iostream>
+#include <fstream>
+
 // About Desktop OpenGL function loaders:
 //  Modern desktop OpenGL doesn't have a standard portable header file to load OpenGL function pointers.
 //  Helper libraries are often used for this purpose! Here we are supporting a few common ones (gl3w, glew, glad).
@@ -128,6 +132,20 @@ int main(int argc, char* argv[])
 #elif _MSC_VER
     ImFont* font = io.Fonts->AddFontFromFileTTF("../data/NotoSansCJKjp/NotoSansMonoCJKjp-Regular.otf", 20.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
 #endif
+
+    // Japanese text
+#if __APPLE__
+    std::ifstream text_stream("../../kanji/regular_use_modern_form_2byte+personal_names.txt", std::ios::binary | std::ios::ate);
+#elif _MSC_VER
+    std::ifstream text_stream("../kanji/regular_use_modern_form_2byte+personal_names.txt", std::ios::binary | std::ios::ate);
+#endif
+    std::streamsize size = text_stream.tellg();
+    text_stream.seekg(0, std::ios::beg);
+
+    std::vector<char> text(size);
+    text_stream.read(text.data(), size);
+    text_stream.close();
+
     // Our state
     bool show_demo_window = false;
     bool show_another_window = false;
@@ -185,6 +203,12 @@ int main(int argc, char* argv[])
             ImGui::End();
         }
 //*/
+        {
+            ImGui::Begin(u8"常用漢字・人名用漢字の全列挙");
+            ImGui::TextWrapped(text.data());
+            ImGui::End();
+        }
+
         {
             ImGui::Begin(u8"人名用漢字でテスト");
             ImGui::Text(u8"なおGetGlyphRangesJapanese()で初期化してる。");
