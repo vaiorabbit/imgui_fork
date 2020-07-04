@@ -12,6 +12,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <string>
 
 // About Desktop OpenGL function loaders:
 //  Modern desktop OpenGL doesn't have a standard portable header file to load OpenGL function pointers.
@@ -117,31 +118,34 @@ int main(int argc, char* argv[])
 #if __APPLE__
     ImFont* font = io.Fonts->AddFontFromFileTTF("../../data/NotoSansCJKjp/NotoSansMonoCJKjp-Regular.otf", 20.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
 #elif _MSC_VER
-    ImFont* font = io.Fonts->AddFontFromFileTTF("../data/NotoSansCJKjp/NotoSansMonoCJKjp-Regular.otf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
+    ImFont* font = io.Fonts->AddFontFromFileTTF("../data/NotoSansCJKjp/NotoSansMonoCJKjp-Regular.otf", 20.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
 #endif
     IM_ASSERT(font != NULL);
 
     // Japanese text (2999 kanjis included)
 #if __APPLE__
-    std::ifstream text_stream("../../kanji/regular_use_force_2byte_codepoint+personal_name_utf8.txt", std::ios::binary | std::ios::ate);
+    std::ifstream text_stream_regular("../../kanji/regular_use.txt", std::ios::binary | std::ios::ate);
+    std::ifstream text_stream_name_1("../../kanji/personal_name_1.txt", std::ios::binary | std::ios::ate);
+    std::ifstream text_stream_name_2("../../kanji/personal_name_2.txt", std::ios::binary | std::ios::ate);
 #elif _MSC_VER
-    std::ifstream text_stream("../kanji/regular_use_force_2byte_codepoint+personal_name_utf8.txt", std::ios::binary | std::ios::ate);
+    std::ifstream text_stream_regular("../kanji/regular_use.txt"); // , std::ios::binary | std::ios::ate);
+    std::ifstream text_stream_name_1("../kanji/personal_name_1.txt"); // , std::ios::binary | std::ios::ate);
+    std::ifstream text_stream_name_2("../kanji/personal_name_2.txt"); // , std::ios::binary | std::ios::ate);
 #endif
-    std::streamsize text_size = text_stream.tellg();
-    text_stream.seekg(0, std::ios::beg);
 
-    const int bytes_per_kanji = 3;
-    const int kanjis_per_line = 1000;
-    std::vector<char> text0(bytes_per_kanji * kanjis_per_line + 1);
-    std::vector<char> text1(bytes_per_kanji * kanjis_per_line + 1);
-    std::vector<char> text2(bytes_per_kanji * kanjis_per_line + 1);
-    text_stream.read(text0.data(), bytes_per_kanji * kanjis_per_line);
-    text_stream.read(text1.data(), bytes_per_kanji * kanjis_per_line);
-    text_stream.read(text2.data(), bytes_per_kanji * kanjis_per_line);
-    text_stream.close();
-    text0[bytes_per_kanji * kanjis_per_line] = '\0';
-    text1[bytes_per_kanji * kanjis_per_line] = '\0';
-    text2[bytes_per_kanji * kanjis_per_line] = '\0';
+    std::vector<std::string> text_regular, text_name_1, text_name_2;
+
+    std::string line;
+    while (std::getline(text_stream_regular, line)) {
+        text_regular.emplace_back(line);
+    }
+    while (std::getline(text_stream_name_1, line)) {
+        text_name_1.emplace_back(line);
+    }
+    while (std::getline(text_stream_name_2, line)) {
+        text_name_2.emplace_back(line);
+    }
+
     // Our state
     bool show_demo_window = false;
     bool show_another_window = false;
@@ -176,56 +180,25 @@ int main(int argc, char* argv[])
             ImGui::ShowDemoWindow(&show_demo_window);
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-/*
-        {
-            static float f = 0.0f;
-            static int counter = 0;
 
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-            ImGui::End();
+        ImGui::Begin(u8"2136 常用漢字 (https://en.wikipedia.org/wiki/List_of_j%C5%8Dy%C5%8D_kanji)");
+        for (auto& line : text_regular) {
+            ImGui::TextWrapped(line.c_str());
         }
-//*/
-        {
-            ImGui::Begin(u8"常用漢字・人名用漢字の全列挙");
-            ImGui::TextWrapped(text0.data());
-            ImGui::TextWrapped(text1.data());
-            ImGui::TextWrapped(text2.data());
-            ImGui::End();
+        ImGui::End();
+
+        ImGui::Begin(u8"651 人名用漢字(not part of 常用漢字) (https://en.wikipedia.org/wiki/Jinmeiy%C5%8D_kanji)");
+        for (auto& line : text_name_1) {
+            ImGui::TextWrapped(line.c_str());
         }
-/*
-        {
-            ImGui::Begin(u8"人名用漢字でテスト");
-            ImGui::Text(u8"なおGetGlyphRangesJapanese()で初期化してる。");
-            ImGui::Text(u8"io.Fonts->AddFontFromFileTTF(\"NotoSansMonoCJKjp-Regular.otf\",");
-            ImGui::Text(u8"        20.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());");
-            const char* names[] = {
-                u8"プロレスラー 橋本真也",
-                u8"歌舞伎役者 河合雪之丞",
-                u8"ロンブー 田村亮",
-                u8"キム兄こと 木村佑一",
-                u8"新しい地図 香取慎吾",
-                u8"西美濃三人衆 氏家卜全",
-            };
-            for (auto name : names) {
-                ImGui::BulletText("%s", name);
-            }
-            ImGui::End();
+        ImGui::End();
+
+        ImGui::Begin(u8"212 人名用漢字(Traditional variants of 常用漢字) (https://en.wikipedia.org/wiki/Jinmeiy%C5%8D_kanji)");
+        for (auto& line : text_name_2) {
+            ImGui::TextWrapped(line.c_str());
         }
-        */
+        ImGui::End();
+
         // 3. Show another simple window.
         if (show_another_window)
         {
