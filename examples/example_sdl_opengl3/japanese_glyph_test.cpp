@@ -114,38 +114,34 @@ int main(int argc, char* argv[])
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Read 'docs/FONTS.txt' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
-    //IM_ASSERT(font != NULL);
 #if __APPLE__
     ImFont* font = io.Fonts->AddFontFromFileTTF("../../data/NotoSansCJKjp/NotoSansMonoCJKjp-Regular.otf", 20.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
 #elif _MSC_VER
-    ImFont* font = io.Fonts->AddFontFromFileTTF("../data/NotoSansCJKjp/NotoSansMonoCJKjp-Regular.otf", 20.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
+    ImFont* font = io.Fonts->AddFontFromFileTTF("../data/NotoSansCJKjp/NotoSansMonoCJKjp-Regular.otf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
 #endif
+    IM_ASSERT(font != NULL);
 
-    // Japanese text
+    // Japanese text (2999 kanjis included)
 #if __APPLE__
-    std::ifstream text_stream("../../kanji/regular_use_modern_form_2byte+personal_names.txt", std::ios::binary | std::ios::ate);
+    std::ifstream text_stream("../../kanji/regular_use_force_2byte_codepoint+personal_name_utf8.txt", std::ios::binary | std::ios::ate);
 #elif _MSC_VER
-    std::ifstream text_stream("../kanji/regular_use_modern_form_2byte+personal_names.txt", std::ios::binary | std::ios::ate);
+    std::ifstream text_stream("../kanji/regular_use_force_2byte_codepoint+personal_name_utf8.txt", std::ios::binary | std::ios::ate);
 #endif
-    std::streamsize size = text_stream.tellg();
+    std::streamsize text_size = text_stream.tellg();
     text_stream.seekg(0, std::ios::beg);
 
-    std::vector<char> text(size);
-    text_stream.read(text.data(), size);
+    const int bytes_per_kanji = 3;
+    const int kanjis_per_line = 1000;
+    std::vector<char> text0(bytes_per_kanji * kanjis_per_line + 1);
+    std::vector<char> text1(bytes_per_kanji * kanjis_per_line + 1);
+    std::vector<char> text2(bytes_per_kanji * kanjis_per_line + 1);
+    text_stream.read(text0.data(), bytes_per_kanji * kanjis_per_line);
+    text_stream.read(text1.data(), bytes_per_kanji * kanjis_per_line);
+    text_stream.read(text2.data(), bytes_per_kanji * kanjis_per_line);
     text_stream.close();
-
+    text0[bytes_per_kanji * kanjis_per_line] = '\0';
+    text1[bytes_per_kanji * kanjis_per_line] = '\0';
+    text2[bytes_per_kanji * kanjis_per_line] = '\0';
     // Our state
     bool show_demo_window = false;
     bool show_another_window = false;
@@ -205,10 +201,12 @@ int main(int argc, char* argv[])
 //*/
         {
             ImGui::Begin(u8"常用漢字・人名用漢字の全列挙");
-            ImGui::TextWrapped(text.data());
+            ImGui::TextWrapped(text0.data());
+            ImGui::TextWrapped(text1.data());
+            ImGui::TextWrapped(text2.data());
             ImGui::End();
         }
-
+/*
         {
             ImGui::Begin(u8"人名用漢字でテスト");
             ImGui::Text(u8"なおGetGlyphRangesJapanese()で初期化してる。");
@@ -227,7 +225,7 @@ int main(int argc, char* argv[])
             }
             ImGui::End();
         }
-
+        */
         // 3. Show another simple window.
         if (show_another_window)
         {
