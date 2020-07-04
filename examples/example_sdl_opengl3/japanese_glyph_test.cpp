@@ -115,35 +115,44 @@ int main(int argc, char* argv[])
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Load Fonts
+    ImFontGlyphRangesBuilder builder;
+    builder.AddRanges(io.Fonts->GetGlyphRangesJapanese());
+#ifdef IMGUI_USE_WCHAR32
+    // Enable IMGUI_USE_WCHAR32 if you want to display "𠮟" (the modern form of "叱") correctly.
+    builder.AddText(u8"𠮟"); // codepoint 0x20b9f(==134047, exceeds the range of ImWchar16), encoded as F0 A0 AE 9F in UTF-8
+#endif
+    ImVector<ImWchar> out_ranges;
+    builder.BuildRanges(&out_ranges);
 #if __APPLE__
-    ImFont* font = io.Fonts->AddFontFromFileTTF("../../data/NotoSansCJKjp/NotoSansMonoCJKjp-Regular.otf", 20.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
+    ImFont* font = io.Fonts->AddFontFromFileTTF("../../data/NotoSansCJKjp/NotoSansMonoCJKjp-Regular.otf", 20.0f, nullptr, out_ranges.Data);
 #elif _MSC_VER
-    ImFont* font = io.Fonts->AddFontFromFileTTF("../data/NotoSansCJKjp/NotoSansMonoCJKjp-Regular.otf", 20.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
+    ImFont* font = io.Fonts->AddFontFromFileTTF("../data/NotoSansCJKjp/NotoSansMonoCJKjp-Regular.otf", 20.0f, nullptr, out_ranges.Data);
 #endif
     IM_ASSERT(font != NULL);
 
     // Japanese text (2999 kanjis included)
 #if __APPLE__
-    std::ifstream text_stream_regular("../../kanji/regular_use.txt", std::ios::binary | std::ios::ate);
-    std::ifstream text_stream_name_1("../../kanji/personal_name_1.txt", std::ios::binary | std::ios::ate);
-    std::ifstream text_stream_name_2("../../kanji/personal_name_2.txt", std::ios::binary | std::ios::ate);
+    std::ifstream text_stream_regular("../../kanji/regular_use.txt");
+    std::ifstream text_stream_name_1("../../kanji/personal_name_1.txt");
+    std::ifstream text_stream_name_2("../../kanji/personal_name_2.txt");
 #elif _MSC_VER
-    std::ifstream text_stream_regular("../kanji/regular_use.txt"); // , std::ios::binary | std::ios::ate);
-    std::ifstream text_stream_name_1("../kanji/personal_name_1.txt"); // , std::ios::binary | std::ios::ate);
-    std::ifstream text_stream_name_2("../kanji/personal_name_2.txt"); // , std::ios::binary | std::ios::ate);
+    std::ifstream text_stream_regular("../kanji/regular_use.txt");
+    std::ifstream text_stream_name_1("../kanji/personal_name_1.txt");
+    std::ifstream text_stream_name_2("../kanji/personal_name_2.txt");
 #endif
 
     std::vector<std::string> text_regular, text_name_1, text_name_2;
-
-    std::string line;
-    while (std::getline(text_stream_regular, line)) {
-        text_regular.emplace_back(line);
-    }
-    while (std::getline(text_stream_name_1, line)) {
-        text_name_1.emplace_back(line);
-    }
-    while (std::getline(text_stream_name_2, line)) {
-        text_name_2.emplace_back(line);
+    {
+        std::string line;
+        while (std::getline(text_stream_regular, line)) {
+            text_regular.emplace_back(line);
+        }
+        while (std::getline(text_stream_name_1, line)) {
+            text_name_1.emplace_back(line);
+        }
+        while (std::getline(text_stream_name_2, line)) {
+            text_name_2.emplace_back(line);
+        }
     }
 
     // Our state
@@ -181,22 +190,42 @@ int main(int argc, char* argv[])
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
 
+        ImGui::SetNextWindowPos(ImVec2(5, 5), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(600, 620), ImGuiCond_FirstUseEver);
         ImGui::Begin(u8"2136 常用漢字 (https://en.wikipedia.org/wiki/List_of_j%C5%8Dy%C5%8D_kanji)");
         for (auto& line : text_regular) {
             ImGui::TextWrapped(line.c_str());
         }
         ImGui::End();
 
+        ImGui::SetNextWindowPos(ImVec2(610, 5), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(630, 175), ImGuiCond_FirstUseEver);
         ImGui::Begin(u8"651 人名用漢字(not part of 常用漢字) (https://en.wikipedia.org/wiki/Jinmeiy%C5%8D_kanji)");
         for (auto& line : text_name_1) {
             ImGui::TextWrapped(line.c_str());
         }
         ImGui::End();
 
+        ImGui::SetNextWindowPos(ImVec2(610, 190), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(630, 175), ImGuiCond_FirstUseEver);
         ImGui::Begin(u8"212 人名用漢字(Traditional variants of 常用漢字) (https://en.wikipedia.org/wiki/Jinmeiy%C5%8D_kanji)");
         for (auto& line : text_name_2) {
             ImGui::TextWrapped(line.c_str());
         }
+        ImGui::End();
+
+        ImGui::SetNextWindowPos(ImVec2(610, 370), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(600, 120), ImGuiCond_FirstUseEver);
+        ImGui::Begin(u8"𠮟 (modern form) and 叱 (traditional form)");
+        ImGui::TextWrapped(
+#ifdef IMGUI_USE_WCHAR32
+            u8"IMGUI_USE_WCHAR32 : defined"
+#else
+            u8"IMGUI_USE_WCHAR32 : undefined"
+#endif
+            );
+        ImGui::TextWrapped(u8"𠮟 (codepoint 0x20b9f(==134047), encoded as F0 A0 AE 9F in UTF-8)");
+        ImGui::TextWrapped(u8"叱 (codepoint 0x53f1(==21489), encoded as E5 8F B1 in UTF-8)");
         ImGui::End();
 
         // 3. Show another simple window.
