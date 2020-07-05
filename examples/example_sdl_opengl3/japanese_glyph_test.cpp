@@ -1,4 +1,4 @@
-﻿// dear imgui: standalone example application for SDL2 + OpenGL
+// dear imgui: standalone example application for SDL2 + OpenGL
 // If you are new to dear imgui, see examples/README.txt and documentation at the top of imgui.cpp.
 // (SDL is a cross-platform general purpose library for handling windows, inputs, OpenGL/Vulkan/Metal graphics context creation, etc.)
 // (GL3W is a helper library to access OpenGL functions since there is no standard header to access modern OpenGL functions easily. Alternatives are GLEW, Glad, etc.)
@@ -13,6 +13,10 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <atomic>
+#ifdef __APPLE__
+#include <malloc/malloc.h>
+#endif
 
 // About Desktop OpenGL function loaders:
 //  Modern desktop OpenGL doesn't have a standard portable header file to load OpenGL function pointers.
@@ -37,6 +41,29 @@ using namespace gl;
 #else
 #include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #endif
+
+class MemoryAllocator
+{
+public:
+    static void* Allocate(size_t sz, void* /*user_data*/) {
+        allocated_size.fetch_add(sz);
+        return std::malloc(sz);
+    }
+
+    static void Free(void* ptr, void* /*user_data*/) {
+        size_t sz = malloc_size(ptr); // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/malloc_size.3.html [TODO] __APPLE__ only.
+        allocated_size.fetch_sub(sz);
+        return std::free(ptr);
+    }
+
+    static size_t GetAllocatedSize() {
+        return allocated_size.load();
+    }
+
+private:
+    static std::atomic_size_t allocated_size;
+};
+std::atomic_size_t MemoryAllocator::allocated_size{0};
 
 // Main code
 int main(int argc, char* argv[])
@@ -98,6 +125,8 @@ int main(int argc, char* argv[])
         fprintf(stderr, "Failed to initialize OpenGL loader!\n");
         return 1;
     }
+
+    ImGui::SetAllocatorFunctions(MemoryAllocator::Allocate, MemoryAllocator::Free);
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -246,8 +275,28 @@ int main(int argc, char* argv[])
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(window);
+        //
+        // GetGlyphRangesJapanese[Current]
+        //   (Debug, IMGUI_USE_WCHAR32 undefined)   -> GetAllocatedSize=25529865
+        //   (Debug, IMGUI_USE_WCHAR32 defined)     -> GetAllocatedSize=26347677
+        //   (Release, IMGUI_USE_WCHAR32 undefined) -> GetAllocatedSize=25500926
+        //   (Release, IMGUI_USE_WCHAR32 defined)   -> GetAllocatedSize=26347410
+        //
+        // GetGlyphRangesJapanese[New]
+        //   (Debug, IMGUI_USE_WCHAR32 undefined)   -> GetAllocatedSize=24653983
+        //   (Debug, IMGUI_USE_WCHAR32 defined)     -> GetAllocatedSize=25494463
+        //   (Release, IMGUI_USE_WCHAR32 undefined) -> GetAllocatedSize=24653716
+        //   (Release, IMGUI_USE_WCHAR32 defined)   -> GetAllocatedSize=25474059
+        //
+        // GetGlyphRangesChineseFull
+        //   (Debug, IMGUI_USE_WCHAR32 undefined)   -> GetAllocatedSize=82231985
+        //   (Debug, IMGUI_USE_WCHAR32 defined)     -> GetAllocatedSize=83040773
+        //   (Release, IMGUI_USE_WCHAR32 undefined) -> GetAllocatedSize=82228814
+        //   (Release, IMGUI_USE_WCHAR32 defined)   -> GetAllocatedSize=83039361
+        //
+        // printf("GetAllocatedSize=%ld\n", MemoryAllocator::GetAllocatedSize());
     }
-    
+
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
