@@ -1,7 +1,9 @@
-// dear imgui: standalone example application for SDL2 + OpenGL
+﻿// dear imgui: standalone example application for SDL2 + OpenGL
 // If you are new to dear imgui, see examples/README.txt and documentation at the top of imgui.cpp.
 // (SDL is a cross-platform general purpose library for handling windows, inputs, OpenGL/Vulkan/Metal graphics context creation, etc.)
 // (GL3W is a helper library to access OpenGL functions since there is no standard header to access modern OpenGL functions easily. Alternatives are GLEW, Glad, etc.)
+
+// NOTE : To handle hard-coded UTF-8 strings correctly on Visual Studio, this source code must be save with UTF-8 with byte order mark (BOM).
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -41,7 +43,7 @@ using namespace gl;
 #else
 #include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #endif
-
+#if 0
 class MemoryAllocator
 {
 public:
@@ -64,7 +66,7 @@ private:
     static std::atomic_size_t allocated_size;
 };
 std::atomic_size_t MemoryAllocator::allocated_size{0};
-
+#endif
 // Main code
 int main(int argc, char* argv[])
 {
@@ -126,7 +128,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    ImGui::SetAllocatorFunctions(MemoryAllocator::Allocate, MemoryAllocator::Free);
+    // ImGui::SetAllocatorFunctions(MemoryAllocator::Allocate, MemoryAllocator::Free);
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
