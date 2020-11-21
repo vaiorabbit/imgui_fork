@@ -166,13 +166,15 @@ int main(int argc, char* argv[])
     std::ifstream text_stream_regular("../../kanji/regular_use.txt");
     std::ifstream text_stream_name_1("../../kanji/personal_name_1.txt");
     std::ifstream text_stream_name_2("../../kanji/personal_name_2.txt");
+    std::ifstream text_stream_2999_kanjis("../../kanji/regular_use_force_2byte_codepoint+personal_name_utf8.txt");
 #elif _MSC_VER
     std::ifstream text_stream_regular("../kanji/regular_use.txt");
     std::ifstream text_stream_name_1("../kanji/personal_name_1.txt");
     std::ifstream text_stream_name_2("../kanji/personal_name_2.txt");
+    std::ifstream text_stream_2999_kanjis("../kanji/regular_use_force_2byte_codepoint+personal_name_utf8.txt");
 #endif
 
-    std::vector<std::string> text_regular, text_name_1, text_name_2;
+    std::vector<std::string> text_regular, text_name_1, text_name_2, text_2999_kanjis;
     {
         std::string line;
         while (std::getline(text_stream_regular, line)) {
@@ -183,6 +185,9 @@ int main(int argc, char* argv[])
         }
         while (std::getline(text_stream_name_2, line)) {
             text_name_2.emplace_back(line);
+        }
+        while (std::getline(text_stream_2999_kanjis, line)) {
+            text_2999_kanjis.emplace_back(line);
         }
     }
 
@@ -223,31 +228,31 @@ int main(int argc, char* argv[])
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
 
         ImGui::SetNextWindowPos(ImVec2(5, 5), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(600, 620), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(550, 200), ImGuiCond_FirstUseEver);
         ImGui::Begin(u8"2136 常用漢字 (https://en.wikipedia.org/wiki/List_of_j%C5%8Dy%C5%8D_kanji)");
         for (auto& line : text_regular) {
             ImGui::TextWrapped(line.c_str());
         }
         ImGui::End();
 
-        ImGui::SetNextWindowPos(ImVec2(610, 5), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(630, 175), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowPos(ImVec2(5, 210), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(550, 150), ImGuiCond_FirstUseEver);
         ImGui::Begin(u8"651 人名用漢字(not part of 常用漢字) (https://en.wikipedia.org/wiki/Jinmeiy%C5%8D_kanji)");
         for (auto& line : text_name_1) {
             ImGui::TextWrapped(line.c_str());
         }
         ImGui::End();
 
-        ImGui::SetNextWindowPos(ImVec2(610, 190), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(630, 175), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowPos(ImVec2(5, 370), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(550, 150), ImGuiCond_FirstUseEver);
         ImGui::Begin(u8"212 人名用漢字(Traditional variants of 常用漢字) (https://en.wikipedia.org/wiki/Jinmeiy%C5%8D_kanji)");
         for (auto& line : text_name_2) {
             ImGui::TextWrapped(line.c_str());
         }
         ImGui::End();
 
-        ImGui::SetNextWindowPos(ImVec2(610, 370), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(600, 120), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowPos(ImVec2(5, 530), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(550, 120), ImGuiCond_FirstUseEver);
         ImGui::Begin(u8"𠮟 (modern form) and 叱 (traditional form)");
         ImGui::TextWrapped(
 #ifdef IMGUI_USE_WCHAR32
@@ -258,6 +263,31 @@ int main(int argc, char* argv[])
             );
         ImGui::TextWrapped(u8"𠮟 (codepoint 0x20b9f(==134047), encoded as F0 A0 AE 9F in UTF-8)");
         ImGui::TextWrapped(u8"叱 (codepoint 0x53f1(==21489), encoded as E5 8F B1 in UTF-8)");
+        ImGui::End();
+
+        ImGui::SetNextWindowPos(ImVec2(560, 5), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(700, 500), ImGuiCond_FirstUseEver);
+        ImGui::Begin(u8"2136 常用漢字 + 863 人名用漢字");
+        for (auto& line : text_2999_kanjis) {
+            ImGui::TextUnformatted(line.c_str());
+        }
+        ImGui::End();
+
+        ImGui::SetNextWindowPos(ImVec2(560, 510), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(700, 160), ImGuiCond_FirstUseEver);
+        ImGui::Begin(u8"人名用漢字でテスト");
+        {
+            const char* names[] = {
+                u8"橋本真也", // https://ja.wikipedia.org/wiki/%E6%A9%8B%E6%9C%AC%E7%9C%9F%E4%B9%9F
+                u8"真田広之", // https://ja.wikipedia.org/wiki/%E7%9C%9F%E7%94%B0%E5%BA%83%E4%B9%8B
+                u8"田村亮",   // https://ja.wikipedia.org/wiki/%E7%94%B0%E6%9D%91%E4%BA%AE_(%E3%81%8A%E7%AC%91%E3%81%84%E8%8A%B8%E4%BA%BA)
+                u8"木村祐一", // https://ja.wikipedia.org/wiki/%E6%9C%A8%E6%9D%91%E7%A5%90%E4%B8%80
+                u8"香取慎吾", // https://ja.wikipedia.org/wiki/%E9%A6%99%E5%8F%96%E6%85%8E%E5%90%BE
+            };
+            for (auto name : names) {
+                ImGui::BulletText("%s", name);
+            }
+        }
         ImGui::End();
 
         // 3. Show another simple window.
