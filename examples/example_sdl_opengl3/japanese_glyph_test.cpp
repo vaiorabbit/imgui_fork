@@ -20,6 +20,8 @@
 #include <malloc/malloc.h>
 #endif
 
+#include <chrono>
+
 // About Desktop OpenGL function loaders:
 //  Modern desktop OpenGL doesn't have a standard portable header file to load OpenGL function pointers.
 //  Helper libraries are often used for this purpose! Here we are supporting a few common ones (gl3w, glew, glad).
@@ -43,6 +45,8 @@ using namespace gl;
 #else
 #include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #endif
+
+// #define MEASURE_GLYPH_BUILD_TIME
 
 // #define MEASURE_MEMORY_ALLOCATION
 
@@ -155,8 +159,11 @@ int main(int argc, char* argv[])
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Load Fonts
+#ifdef MEASURE_GLYPH_BUILD_TIME
+    auto time_measure_start = std::chrono::high_resolution_clock::now();
+#endif
     ImFontGlyphRangesBuilder builder;
-    builder.AddRanges(io.Fonts->GetGlyphRangesChineseFull()); // builder.AddRanges(io.Fonts->GetGlyphRangesChineseFull());
+    builder.AddRanges(io.Fonts->GetGlyphRangesJapanese()); // builder.AddRanges(io.Fonts->GetGlyphRangesChineseFull());
 #ifdef IMGUI_USE_WCHAR32
     // Enable IMGUI_USE_WCHAR32 if you want to display "𠮟" (the modern form of "叱") correctly.
     builder.AddText(u8"𠮟"); // codepoint 0x20b9f(==134047, exceeds the range of ImWchar16), encoded as F0 A0 AE 9F in UTF-8
@@ -169,6 +176,33 @@ int main(int argc, char* argv[])
     ImFont* font = io.Fonts->AddFontFromFileTTF("../data/NotoSansCJKjp/NotoSansMonoCJKjp-Regular.otf", 20.0f, nullptr, out_ranges.Data);
 #endif
     IM_ASSERT(font != NULL);
+
+#ifdef MEASURE_GLYPH_BUILD_TIME
+    auto time_measure_stop = std::chrono::high_resolution_clock::now();
+    auto time_measure_duration = std::chrono::duration_cast<std::chrono::microseconds>(time_measure_stop - time_measure_start);
+
+    // [Windows x64 / Visual Studio 2019 Version 16.7.4 / ImGui 1.80 WIP]
+    // GetGlyphRangesJapanese[Current]
+    //   (Debug, IMGUI_USE_WCHAR32 undefined)   -> (/ (+ 6330 6582 5527 5540 6883) 5.0)      -> 6172.4 (microsec)
+    //   (Debug, IMGUI_USE_WCHAR32 defined)     -> (/ (+ 23513 24297 23181 23042 24076) 5.0) -> 23621.8 (microsec)
+    //   (Release, IMGUI_USE_WCHAR32 undefined) -> (/ (+ 4814 4809 4573 4678 4845) 5.0)      -> 4743.8 (microsec)
+    //   (Release, IMGUI_USE_WCHAR32 defined)   -> (/ (+ 5217 5735 7078 5633 6122) 5.0)      -> 5957.0 (microsec)
+    //
+    // GetGlyphRangesJapanese[New]
+    //   (Debug, IMGUI_USE_WCHAR32 undefined)   -> (/ (+ 6939 6648 6716 6163 6667) 5.0)      -> 6626.6 (microsec)
+    //   (Debug, IMGUI_USE_WCHAR32 defined)     -> (/ (+ 25339 25301 24876 24160 24305) 5.0) -> 24796.2 (microsec)
+    //   (Release, IMGUI_USE_WCHAR32 undefined) -> (/ (+ 4522 4375 5027 5242 4959) 5.0)      -> 4825.0 (microsec)
+    //   (Release, IMGUI_USE_WCHAR32 defined)   -> (/ (+ 5775 5667 6396 5544 5608) 5.0)      -> 5798.0 (microsec)
+    //
+    // GetGlyphRangesChineseFull
+    //   (Debug, IMGUI_USE_WCHAR32 undefined)   -> (/ (+ 6509 9122 5742 6513 7276) 5.0)      -> 7032.4 (microsec)
+    //   (Debug, IMGUI_USE_WCHAR32 defined)     -> (/ (+ 24838 23370 24425 23798 29683) 5.0) -> 25222.8 (microsec)
+    //   (Release, IMGUI_USE_WCHAR32 undefined) -> (/ (+ 5291 4837 4604 4462 4584) 5.0)      -> 4755.6 (microsec)
+    //   (Release, IMGUI_USE_WCHAR32 defined)   -> (/ (+ 5943 6725 5738 5532 6603) 5.0)      -> 6108.2 (microsec)
+
+    printf("Init duration=%lld\n", time_measure_duration.count());
+#endif
+
 
     // Japanese text (2999 kanjis included)
 #if __APPLE__
