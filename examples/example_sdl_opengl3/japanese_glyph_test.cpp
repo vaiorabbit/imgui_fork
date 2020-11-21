@@ -43,7 +43,10 @@ using namespace gl;
 #else
 #include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #endif
-#if 0
+
+// #define MEASURE_MEMORY_ALLOCATION
+
+#ifdef MEASURE_MEMORY_ALLOCATION
 class MemoryAllocator
 {
 public:
@@ -53,7 +56,11 @@ public:
     }
 
     static void Free(void* ptr, void* /*user_data*/) {
+#if __APPLE__
         size_t sz = malloc_size(ptr); // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/malloc_size.3.html [TODO] __APPLE__ only.
+#else
+        size_t sz = _msize(ptr); // https://docs.microsoft.com/ja-jp/cpp/c-runtime-library/reference/msize?view=msvc-160
+#endif
         allocated_size.fetch_sub(sz);
         return std::free(ptr);
     }
@@ -67,6 +74,7 @@ private:
 };
 std::atomic_size_t MemoryAllocator::allocated_size{0};
 #endif
+
 // Main code
 int main(int argc, char* argv[])
 {
@@ -127,8 +135,9 @@ int main(int argc, char* argv[])
         fprintf(stderr, "Failed to initialize OpenGL loader!\n");
         return 1;
     }
-
-    // ImGui::SetAllocatorFunctions(MemoryAllocator::Allocate, MemoryAllocator::Free);
+#ifdef MEASURE_MEMORY_ALLOCATION
+    ImGui::SetAllocatorFunctions(MemoryAllocator::Allocate, MemoryAllocator::Free);
+#endif
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -147,7 +156,7 @@ int main(int argc, char* argv[])
 
     // Load Fonts
     ImFontGlyphRangesBuilder builder;
-    builder.AddRanges(io.Fonts->GetGlyphRangesJapanese());
+    builder.AddRanges(io.Fonts->GetGlyphRangesChineseFull()); // builder.AddRanges(io.Fonts->GetGlyphRangesChineseFull());
 #ifdef IMGUI_USE_WCHAR32
     // Enable IMGUI_USE_WCHAR32 if you want to display "𠮟" (the modern form of "叱") correctly.
     builder.AddText(u8"𠮟"); // codepoint 0x20b9f(==134047, exceeds the range of ImWchar16), encoded as F0 A0 AE 9F in UTF-8
@@ -274,8 +283,8 @@ int main(int argc, char* argv[])
         ImGui::End();
 
         ImGui::SetNextWindowPos(ImVec2(560, 510), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(700, 160), ImGuiCond_FirstUseEver);
-        ImGui::Begin(u8"人名用漢字でテスト");
+        ImGui::SetNextWindowSize(ImVec2(700, 190), ImGuiCond_FirstUseEver);
+        ImGui::Begin(u8"Names of Japanese celebrities / 日本の著名人の名前でテスト");
         {
             const char* names[] = {
                 u8"橋本真也", // https://ja.wikipedia.org/wiki/%E6%A9%8B%E6%9C%AC%E7%9C%9F%E4%B9%9F
@@ -283,6 +292,7 @@ int main(int argc, char* argv[])
                 u8"田村亮",   // https://ja.wikipedia.org/wiki/%E7%94%B0%E6%9D%91%E4%BA%AE_(%E3%81%8A%E7%AC%91%E3%81%84%E8%8A%B8%E4%BA%BA)
                 u8"木村祐一", // https://ja.wikipedia.org/wiki/%E6%9C%A8%E6%9D%91%E7%A5%90%E4%B8%80
                 u8"香取慎吾", // https://ja.wikipedia.org/wiki/%E9%A6%99%E5%8F%96%E6%85%8E%E5%90%BE
+                u8"近藤麻理恵", // https://ja.wikipedia.org/wiki/%E8%BF%91%E8%97%A4%E9%BA%BB%E7%90%86%E6%81%B5
             };
             for (auto name : names) {
                 ImGui::BulletText("%s", name);
@@ -307,26 +317,28 @@ int main(int argc, char* argv[])
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(window);
-        //
+
+        // [Windows x64 / Visual Studio 2019 Version 16.7.4 / ImGui 1.80 WIP]
         // GetGlyphRangesJapanese[Current]
-        //   (Debug, IMGUI_USE_WCHAR32 undefined)   -> GetAllocatedSize=25529865
-        //   (Debug, IMGUI_USE_WCHAR32 defined)     -> GetAllocatedSize=26347677
-        //   (Release, IMGUI_USE_WCHAR32 undefined) -> GetAllocatedSize=25500926
-        //   (Release, IMGUI_USE_WCHAR32 defined)   -> GetAllocatedSize=26347410
+        //   (Debug, IMGUI_USE_WCHAR32 undefined)   -> GetAllocatedSize=27718242
+        //   (Debug, IMGUI_USE_WCHAR32 defined)     -> GetAllocatedSize=28537544
+        //   (Release, IMGUI_USE_WCHAR32 undefined) -> GetAllocatedSize=27730578
+        //   (Release, IMGUI_USE_WCHAR32 defined)   -> GetAllocatedSize=28549880
         //
         // GetGlyphRangesJapanese[New]
-        //   (Debug, IMGUI_USE_WCHAR32 undefined)   -> GetAllocatedSize=24653983
-        //   (Debug, IMGUI_USE_WCHAR32 defined)     -> GetAllocatedSize=25494463
-        //   (Release, IMGUI_USE_WCHAR32 undefined) -> GetAllocatedSize=24653716
-        //   (Release, IMGUI_USE_WCHAR32 defined)   -> GetAllocatedSize=25474059
+        //   (Debug, IMGUI_USE_WCHAR32 undefined)   -> GetAllocatedSize=27790566
+        //   (Debug, IMGUI_USE_WCHAR32 defined)     -> GetAllocatedSize=28613312
+        //   (Release, IMGUI_USE_WCHAR32 undefined) -> GetAllocatedSize=27802902
+        //   (Release, IMGUI_USE_WCHAR32 defined)   -> GetAllocatedSize=28625648
         //
         // GetGlyphRangesChineseFull
-        //   (Debug, IMGUI_USE_WCHAR32 undefined)   -> GetAllocatedSize=82231985
-        //   (Debug, IMGUI_USE_WCHAR32 defined)     -> GetAllocatedSize=83040773
-        //   (Release, IMGUI_USE_WCHAR32 undefined) -> GetAllocatedSize=82228814
-        //   (Release, IMGUI_USE_WCHAR32 defined)   -> GetAllocatedSize=83039361
-        //
-        // printf("GetAllocatedSize=%ld\n", MemoryAllocator::GetAllocatedSize());
+        //   (Debug, IMGUI_USE_WCHAR32 undefined)   -> GetAllocatedSize=102034930
+        //   (Debug, IMGUI_USE_WCHAR32 defined)     -> GetAllocatedSize=102847380
+        //   (Release, IMGUI_USE_WCHAR32 undefined) -> GetAllocatedSize=102034924
+        //   (Release, IMGUI_USE_WCHAR32 defined)   -> GetAllocatedSize=102847374
+#ifdef MEASURE_MEMORY_ALLOCATION
+         printf("GetAllocatedSize=%zu\n", MemoryAllocator::GetAllocatedSize());
+#endif
     }
 
     // Cleanup
