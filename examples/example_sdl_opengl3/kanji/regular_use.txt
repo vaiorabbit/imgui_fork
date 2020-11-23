@@ -827,7 +827,7 @@
 827 識 discriminating シキ
 828 軸 axis ジク
 829 七 seven シチ、なな、なな-つ、（なの）
-830 𠮟 scold シツ、しか-る
+830 𠮟(modern form) / 叱(traditional form) scold シツ、しか-る
 831 失 lose シツ、うしな-う
 832 室 room シツ、むろ
 833 疾 rapidly シツ
