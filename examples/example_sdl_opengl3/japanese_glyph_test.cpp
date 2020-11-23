@@ -46,6 +46,12 @@ using namespace gl;
 #include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #endif
 
+#if __APPLE__
+#define DATA_PATH "../.."
+#else
+#define DATA_PATH ".."
+#endif
+
 // #define MEASURE_GLYPH_BUILD_TIME
 
 // #define MEASURE_MEMORY_ALLOCATION
@@ -170,11 +176,7 @@ int main(int argc, char* argv[])
 #endif
     ImVector<ImWchar> out_ranges;
     builder.BuildRanges(&out_ranges);
-#if __APPLE__
-    ImFont* font = io.Fonts->AddFontFromFileTTF("../../data/NotoSansCJKjp/NotoSansMonoCJKjp-Regular.otf", 20.0f, nullptr, out_ranges.Data);
-#elif _MSC_VER
-    ImFont* font = io.Fonts->AddFontFromFileTTF("../data/NotoSansCJKjp/NotoSansMonoCJKjp-Regular.otf", 20.0f, nullptr, out_ranges.Data);
-#endif
+    ImFont* font = io.Fonts->AddFontFromFileTTF(DATA_PATH "/data/NotoSansCJKjp/NotoSansMonoCJKjp-Regular.otf", 20.0f, nullptr, out_ranges.Data);
     IM_ASSERT(font != NULL);
 
 #ifdef MEASURE_GLYPH_BUILD_TIME
@@ -205,17 +207,10 @@ int main(int argc, char* argv[])
 
 
     // Japanese text (2999 kanjis included)
-#if __APPLE__
-    std::ifstream text_stream_regular("../../kanji/regular_use.txt");
-    std::ifstream text_stream_name_1("../../kanji/personal_name_1.txt");
-    std::ifstream text_stream_name_2("../../kanji/personal_name_2.txt");
-    std::ifstream text_stream_2999_kanjis("../../kanji/regular_use_force_2byte_codepoint+personal_name_utf8.txt");
-#elif _MSC_VER
-    std::ifstream text_stream_regular("../kanji/regular_use.txt");
-    std::ifstream text_stream_name_1("../kanji/personal_name_1.txt");
-    std::ifstream text_stream_name_2("../kanji/personal_name_2.txt");
-    std::ifstream text_stream_2999_kanjis("../kanji/regular_use_force_2byte_codepoint+personal_name_utf8.txt");
-#endif
+    std::ifstream text_stream_regular(DATA_PATH "/kanji/regular_use.txt");
+    std::ifstream text_stream_name_1(DATA_PATH "/kanji/personal_name_1.txt");
+    std::ifstream text_stream_name_2(DATA_PATH "/kanji/personal_name_2.txt");
+    std::ifstream text_stream_2999_kanjis(DATA_PATH "/kanji/regular_use_force_2byte_codepoint+personal_name_utf8.txt");
 
     std::vector<std::string> text_regular, text_name_1, text_name_2, text_2999_kanjis;
     {
